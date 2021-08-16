@@ -25,14 +25,10 @@
 //! The state variables of an QIF model neuron
 typedef struct neuron_t {
     // nominally 'fixed' parameters
-    REAL A;
-    REAL B;
     REAL C;
-    REAL D;
 
     // Variable-state parameters
     REAL V;
-    REAL U;
 
     //! offset current [nA]
     REAL I_offset;
@@ -76,12 +72,6 @@ static inline void neuron_ode(
 }
 #endif
 
-//! \brief The original model uses 0.04, but this (1 ULP larger?) gives better
-//! numeric stability.
-//!
-//! Thanks to Mantas Mikaitis for this!
-static const REAL MAGIC_MULTIPLIER = REAL_CONST(0.040008544921875);
-
 /*!
  * \brief Midpoint is best balance between speed and accuracy so far.
  * \details From ODE solver comparison work, paper shows that Trapezoid version
@@ -94,25 +84,12 @@ static inline void rk2_kernel_midpoint(
         REAL h, neuron_t *neuron, REAL input_this_timestep) {
     // to match Mathematica names
     REAL lastV1 = neuron->V;
-    REAL lastU1 = neuron->U;
-    REAL a = neuron->A;
-    REAL b = neuron->B;
 
-    // REAL pre_alph = REAL_CONST(140.0) + input_this_timestep - lastU1;
     REAL pre_alph = input_this_timestep;
-    // REAL alpha = pre_alph
-            // + (REAL_CONST(5.0) + MAGIC_MULTIPLIER * lastV1) * lastV1;
     REAL alpha = pre_alph + lastV1 * lastV1;
     REAL eta = lastV1 + REAL_HALF(h * alpha);
 
-    // could be represented as a long fract?
-    REAL beta = REAL_HALF(h * (b * lastV1 - lastU1) * a);
-
-    // neuron->V += h * (pre_alph - beta
-    //         + (REAL_CONST(5.0) + MAGIC_MULTIPLIER * eta) * eta);
     neuron->V += h * (pre_alph + eta * eta);
-
-    neuron->U += a * h * (-lastU1 - beta + b * eta);
 }
 
 
@@ -144,9 +121,6 @@ static void neuron_model_has_spiked(neuron_t *restrict neuron) {
     // reset membrane voltage
     neuron->V = neuron->C;
 
-    // offset 2nd state variable
-    neuron->U += neuron->D;
-
     // simple threshold correction - next timestep (only) gets a bump
     neuron->this_h = global_params->machine_timestep_ms * SIMPLE_TQ_OFFSET;
 }
@@ -155,4 +129,4 @@ static state_t neuron_model_get_membrane_voltage(const neuron_t *neuron) {
     return neuron->V;
 }
 
-#endif   // _NEURON_MODEL_IZH_CURR_IMPL_H_
+#endif   // _QIF_IMPL_H_

@@ -31,14 +31,10 @@ void neuron_model_set_global_neuron_params(
 
 void neuron_model_print_state_variables(const neuron_t *neuron) {
     log_debug("V = %11.4k ", neuron->V);
-    log_debug("U = %11.4k ", neuron->U);
 }
 
 void neuron_model_print_parameters(const neuron_t *neuron) {
-    log_debug("A = %11.4k ", neuron->A);
-    log_debug("B = %11.4k ", neuron->B);
     log_debug("C = %11.4k ", neuron->C);
-    log_debug("D = %11.4k ", neuron->D);
 
     log_debug("I = %11.4k \n", neuron->I_offset);
 }

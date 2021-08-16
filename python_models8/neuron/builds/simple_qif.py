@@ -21,6 +21,8 @@ from spynnaker.pyNN.models.neuron.threshold_types import ThresholdTypeStatic
 from spynnaker.pyNN.models.neuron import AbstractPyNNNeuronModelStandard
 from spynnaker.pyNN.models.defaults import default_initial_values
 
+from python_models8.neuron.neuron_models.qif_model import QifModel
+
 _IZK_THRESHOLD = 100.0
 
 
@@ -63,12 +65,11 @@ class SimpleQif(AbstractPyNNNeuronModelStandard):
     """
 
     # noinspection PyPep8Naming
-    @default_initial_values({"v", "u", "isyn_exc", "isyn_inh"})
-    def __init__(
-            self, a=0.02, b=0.2, c=-100.0, d=2.0, i_offset=0.0, u=0.0,
-            v=-100.0, tau_syn_E=5.0, tau_syn_I=5.0, isyn_exc=0.0, isyn_inh=0.0):
+    @default_initial_values({"v", "isyn_exc", "isyn_inh"})
+    def __init__(self, c=-100.0, i_offset=0.0, v=-100.0,
+        tau_syn_E=5.0, tau_syn_I=5.0, isyn_exc=0.0, isyn_inh=0.0):
         # pylint: disable=too-many-arguments, too-many-locals
-        neuron_model = NeuronModelIzh(a, b, c, d, v, u, i_offset)
+        neuron_model = QifModel(c, v, i_offset)
         synapse_type = SynapseTypeExponential(
             tau_syn_E, tau_syn_I, isyn_exc, isyn_inh)
         # synapse_type = SynapseTypeDelta(

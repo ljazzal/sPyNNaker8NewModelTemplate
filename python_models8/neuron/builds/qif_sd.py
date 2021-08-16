@@ -20,29 +20,19 @@ from spynnaker.pyNN.models.neuron.threshold_types import ThresholdTypeStatic
 from spynnaker.pyNN.models.neuron import AbstractPyNNNeuronModelStandard
 from spynnaker.pyNN.models.defaults import default_initial_values
 
+from python_models8.neuron.neuron_models.qif_model import QifModel
+
 _IZK_THRESHOLD = 100.0
 
 
 class QifSd(AbstractPyNNNeuronModelStandard):
-    """ Izhikevich neuron model with current inputs.
+    """ QIF neuron model with synaptic depression (alpha current)
 
-    :param a: :math:`a`
-    :type a: float, iterable(float), ~pyNN.random.RandomDistribution
-        or (mapping) function
-    :param b: :math:`b`
-    :type b: float, iterable(float), ~pyNN.random.RandomDistribution
-        or (mapping) function
     :param c: :math:`c`
     :type c: float, iterable(float), ~pyNN.random.RandomDistribution
         or (mapping) function
-    :param d: :math:`d`
-    :type d: float, iterable(float), ~pyNN.random.RandomDistribution
-        or (mapping) function
     :param i_offset: :math:`I_{offset}`
     :type i_offset: float, iterable(float), ~pyNN.random.RandomDistribution
-        or (mapping) function
-    :param u: :math:`u_{init} = \\delta V_{init}`
-    :type u: float, iterable(float), ~pyNN.random.RandomDistribution
         or (mapping) function
     :param v: :math:`v_{init} = V_{init}`
     :type v: float, iterable(float), ~pyNN.random.RandomDistribution
@@ -62,14 +52,13 @@ class QifSd(AbstractPyNNNeuronModelStandard):
     """
 
     # noinspection PyPep8Naming
-    @default_initial_values({"v", "u", "i_offset", "exc_response", "exc_exp_response", "inh_response",
+    @default_initial_values({"v", "i_offset", "exc_response", "exc_exp_response", "inh_response",
         "inh_exp_response"})
-    def __init__(
-            self, a=0.02, b=0.2, c=-100.0, d=2.0, i_offset=0.0, u=0.0,
-            v=-100.0, tau_syn_E=0.5, tau_syn_I=0.5, exc_response=0.0,
+    def __init__(self, c=-100.0, i_offset=0.0, v=-100.0,
+            tau_syn_E=0.5, tau_syn_I=0.5, exc_response=0.0,
             exc_exp_response=0.0, inh_response=0.0, inh_exp_response=0.0):
         # pylint: disable=too-many-arguments, too-many-locals
-        neuron_model = NeuronModelIzh(a, b, c, d, v, u, i_offset)
+        neuron_model = QifModel(c, v, i_offset)
         synapse_type = SynapseTypeAlpha(
             exc_response, exc_exp_response, tau_syn_E, inh_response,
             inh_exp_response, tau_syn_I)
