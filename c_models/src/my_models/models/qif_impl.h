@@ -20,7 +20,7 @@
 #ifndef _QIF_IMPL_H_
 #define _QIF_IMPL_H_
 
-#include "neuron_model.h"
+#include <neuron/models/neuron_model.h>
 
 //! The state variables of an QIF model neuron
 typedef struct neuron_t {
@@ -96,7 +96,7 @@ static inline void rk2_kernel_midpoint(
 static state_t neuron_model_state_update(
         uint16_t num_excitatory_inputs, const input_t *exc_input,
     uint16_t num_inhibitory_inputs, const input_t *inh_input,
-    input_t external_bias, neuron_t *restrict neuron) {
+    input_t external_bias, REAL current_offset, neuron_t *restrict neuron) {
     REAL total_exc = 0;
     REAL total_inh = 0;
 
@@ -108,7 +108,7 @@ static state_t neuron_model_state_update(
     }
 
     input_t input_this_timestep = total_exc - total_inh
-            + external_bias + neuron->I_offset;
+            + external_bias + neuron->I_offset + current_offset;
 
     // the best AR update so far
     rk2_kernel_midpoint(neuron->this_h, neuron, input_this_timestep);
