@@ -1,3 +1,4 @@
+from python_models8.neuron.synapse_types.my_synapse_type import EXC_INIT
 from data_specification.enums.data_type import DataType
 from spinn_front_end_common.utilities.constants import BYTES_PER_WORD
 from spynnaker.pyNN.utilities.struct import Struct
@@ -9,13 +10,15 @@ THRESHOLD = "threshold"
 V = "v"
 EXC_INPUT = "exc_input"
 INH_INPUT = "inh_input"
+EXT_INPUT = "ext_input"
 
 # TODO: Update the units for the parameters and state variables
 UNITS = {
     THRESHOLD: "mV",
     V: "mV",
     EXC_INPUT: "nA",
-    INH_INPUT: "nA"
+    INH_INPUT: "nA",
+    EXT_INPUT: ""
 }
 
 
@@ -24,18 +27,20 @@ class MyFullNeuronImpl(AbstractNeuronImpl):
     def __init__(self,
 
                  # TODO: add model parameters and state variables
-                 threshold, v, exc_input, inh_input):
+                 threshold, v, exc_input, inh_input, ext_input):
 
         # TODO: Store the variables
         self._threshold = threshold
         self._v = v
         self._exc_input = exc_input
         self._inh_input = inh_input
+        self._ext_input = ext_input
 
         # TODO: Store a struct to make other operations easier
         self._struct = Struct([
             DataType.S1615,  # inputs[0]
             DataType.S1615,  # inputs[1]
+            DataType.S1615,  # inputs[2]
             DataType.S1615,  # v
             DataType.S1615   # threshold
         ])
@@ -73,6 +78,14 @@ class MyFullNeuronImpl(AbstractNeuronImpl):
     @inh_input.setter
     def inh_input(self, inh_input):
         self._inh_input = inh_input
+    
+    @property
+    def ext_input(self):
+        return self._ext_input
+
+    @ext_input.setter
+    def ext_input(self, ext_input):
+        self._ext_input = ext_input
 
     @property
     def model_name(self):
@@ -122,28 +135,38 @@ class MyFullNeuronImpl(AbstractNeuronImpl):
 
     def get_recordable_variables(self):
         # TODO: Update with the names of state variables that can be recorded
-        return ["v"]
+        return ["v", "ext_input"]
 
     def get_recordable_data_types(self):
         # TODO: Update with the names and recorded types of the state variables
-        return {"v": DataType.S1615}
+        return {"v": DataType.S1615, "ext_input": DataType.S1615}
 
     def get_recordable_units(self, variable):
         # TODO: Update with the appropriate units for variables
-        if variable != "v":
+        units = ""
+        if variable == "v":
+            units = "mV"
+        elif variable == "ext_input":
+            units = ""
+        else:
             raise ValueError("Unknown variable {}".format(variable))
-        return "mV"
+        return units
 
     def get_recordable_variable_index(self, variable):
         # TODO: Update with the index in the recorded_variable_values array
         # that the given variable will be recorded in to
-        if variable != "v":
+        index = None
+        if variable == "v":
+            index = 0
+        elif variable == "ext_input":
+            index = 1
+        else:
             raise ValueError("Unknown variable {}".format(variable))
-        return 0
+        return index
 
     def is_recordable(self, variable):
         # TODO: Update to identify variables that can be recorded
-        return variable == "v"
+        return variable == "v" or variable == "ext_input"
 
     def add_parameters(self, parameters):
         # TODO: Write the parameter values
@@ -154,11 +177,13 @@ class MyFullNeuronImpl(AbstractNeuronImpl):
         state_variables[V] = self._v
         state_variables[EXC_INPUT] = self._exc_input
         state_variables[INH_INPUT] = self._inh_input
+        state_variables[EXT_INPUT] = self._ext_input
 
     def get_data(self, parameters, state_variables, vertex_slice):
         # TODO: get the data in the appropriate form to match the struct
         values = [state_variables[EXC_INPUT],
                   state_variables[INH_INPUT],
+                  state_variables[EXT_INPUT],
                   state_variables[V],
                   parameters[THRESHOLD]]
         return self._struct.get_data(
@@ -167,7 +192,7 @@ class MyFullNeuronImpl(AbstractNeuronImpl):
     def read_data(
             self, data, offset, vertex_slice, parameters, state_variables):
         # TODO: Extract items from the data to be updated
-        (exc_input, inh_input, v, _threshold) = self._struct.read_data(
+        (exc_input, inh_input, ext_input, v, _threshold) = self._struct.read_data(
             data, offset, vertex_slice.n_atoms)
         new_offset = offset + self._struct.get_size_in_whole_words(
             vertex_slice.n_atoms)
@@ -175,6 +200,7 @@ class MyFullNeuronImpl(AbstractNeuronImpl):
 
         variables[EXC_INPUT] = exc_input
         variables[INH_INPUT] = inh_input
+        variables[EXT_INPUT] = ext_input
         variables[V] = v
 
         return new_offset

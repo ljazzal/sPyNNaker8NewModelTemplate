@@ -14,6 +14,7 @@ typedef struct neuron_t {
     REAL I_offset;
     // Put anything else you want to store per neuron
     REAL my_parameter;
+    REAL I_ext;
 } neuron_t;
 
 typedef struct global_neuron_params_t {
@@ -49,6 +50,9 @@ static state_t neuron_model_state_update(
     input_t input_this_timestep =
             total_exc - total_inh + external_bias + neuron->I_offset + current_offset;
 
+    // Record external current
+    neuron->I_ext = current_offset;
+
     // TODO: Solve your equation here
     neuron->V += input_this_timestep;
 
@@ -62,6 +66,11 @@ static state_t neuron_model_get_membrane_voltage(const neuron_t *neuron) {
 
     // TODO: Get the state value representing the membrane voltage
     return neuron->V;
+}
+
+static state_t neuron_model_get_external_current(const neuron_t *neuron) {
+
+    return neuron->I_ext;
 }
 
 static void neuron_model_has_spiked(neuron_t *restrict neuron) {

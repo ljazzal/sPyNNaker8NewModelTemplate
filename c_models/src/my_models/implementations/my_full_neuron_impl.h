@@ -9,18 +9,21 @@
 #include <debug.h>
 
 #define V_RECORDING_INDEX 0
-#define N_RECORDED_VARS 1
+#define I_EXT_RECORDING_INDEX 1
+#define N_RECORDED_VARS 2
 
 #define SPIKE_RECORDING_BITFIELD 0
 #define N_BITFIELD_VARS 1
 
 #include <neuron/neuron_recording.h>
+#include <neuron/current_sources/current_source_impl.h>
 
 //! neuron_impl_t struct
 typedef struct neuron_impl_t {
     accum inputs[2];
     accum v;
     accum threshold;
+    accum I_ext;
 } neuron_impl_t;
 
 //! Array of neuron states
@@ -74,11 +77,16 @@ static void neuron_impl_do_timestep_update(
         // Get the neuron itself
         neuron_impl_t *neuron = &neuron_array[neuron_index];
 
-        // Store the recorded membrane voltage
+        // Get any input from an injected current source
+        REAL current_offset = current_source_get_offset(time, neuron_index);
+
+        // Store the recorded membrane voltage and external input
         neuron_recording_record_accum(V_RECORDING_INDEX, neuron_index, neuron->v);
+        neuron_recording_record_accum(I_EXT_RECORDING_INDEX, neuron_index, current_offset);
 
         // Do something to update the state
-        neuron->v += neuron->inputs[0] - neuron->inputs[1];
+        neuron->v += neuron->inputs[0] - neuron->inputs[1] + current_offset;
+        neuron->I_ext = current_offset;
         neuron->inputs[0] = 0;
         neuron->inputs[1] = 0;
 
