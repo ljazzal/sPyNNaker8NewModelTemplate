@@ -28,8 +28,8 @@ typedef struct global_neuron_params_t {
 extern const global_neuron_params_t *global_params;
 
 static state_t neuron_model_state_update(
-        uint16_t num_excitatory_inputs, const input_t *exc_input,
-        uint16_t num_inhibitory_inputs, const input_t *inh_input,
+        uint16_t num_excitatory_inputs, const input_t* exc_input,
+        uint16_t num_inhibitory_inputs, const input_t* inh_input,
         input_t external_bias, REAL current_offset, neuron_t *restrict neuron) {
 
     // This takes the input and generates an input value, assumed to be a
