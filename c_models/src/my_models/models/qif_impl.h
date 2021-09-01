@@ -33,6 +33,12 @@ typedef struct neuron_t {
     //! offset current [nA]
     REAL I_offset;
 
+    //! countdown to end of next refractory period [timesteps]
+    int32_t  refract_timer;
+
+    //! refractory time of neuron [timesteps]
+    int32_t  T_refract;
+
     //! current timestep - simple correction for threshold
     REAL this_h;
 } neuron_t;
@@ -49,28 +55,6 @@ extern const global_neuron_params_t *global_params;
  * use cases 1.85 gives slightly better spike timings.
  */
 static const REAL SIMPLE_TQ_OFFSET = REAL_CONST(1.85);
-
-/////////////////////////////////////////////////////////////
-#if 0
-// definition for Izhikevich neuron
-static inline void neuron_ode(
-        REAL t, REAL stateVar[], REAL dstateVar_dt[],
-        neuron_t *neuron, REAL input_this_timestep) {
-    REAL V_now = stateVar[1];
-    REAL U_now = stateVar[2];
-    log_debug(" sv1 %9.4k  V %9.4k --- sv2 %9.4k  U %9.4k\n", stateVar[1],
-            neuron->V, stateVar[2], neuron->U);
-
-    // Update V
-    dstateVar_dt[1] =
-            REAL_CONST(140.0)
-            + (REAL_CONST(5.0) + REAL_CONST(0.0400) * V_now) * V_now - U_now
-            + input_this_timestep;
-
-    // Update U
-    dstateVar_dt[2] = neuron->A * (neuron->B * V_now - U_now);
-}
-#endif
 
 /*!
  * \brief Midpoint is best balance between speed and accuracy so far.
@@ -97,23 +81,29 @@ static state_t neuron_model_state_update(
         uint16_t num_excitatory_inputs, const input_t *exc_input,
     uint16_t num_inhibitory_inputs, const input_t *inh_input,
     input_t external_bias, REAL current_offset, neuron_t *restrict neuron) {
-    REAL total_exc = 0;
-    REAL total_inh = 0;
+    
+    // If outside of the refractory period
+    if (neuron->refract_timer <= 0) {
+        REAL total_exc = 0;
+        REAL total_inh = 0;
 
-    for (int i =0; i<num_excitatory_inputs; i++) {
-        total_exc += exc_input[i];
+        for (int i =0; i<num_excitatory_inputs; i++) {
+            total_exc += exc_input[i];
+        }
+        for (int i =0; i<num_inhibitory_inputs; i++) {
+            total_inh += inh_input[i];
+        }
+
+        input_t input_this_timestep = total_exc - total_inh
+                + external_bias + neuron->I_offset + current_offset;
+
+        // the best AR update so far
+        rk2_kernel_midpoint(neuron->this_h, neuron, input_this_timestep);
+        neuron->this_h = global_params->machine_timestep_ms;
+    } else {
+        // countdown refractory timer
+        neuron->refract_timer--;
     }
-    for (int i =0; i<num_inhibitory_inputs; i++) {
-        total_inh += inh_input[i];
-    }
-
-    input_t input_this_timestep = total_exc - total_inh
-            + external_bias + neuron->I_offset + current_offset;
-
-    // the best AR update so far
-    rk2_kernel_midpoint(neuron->this_h, neuron, input_this_timestep);
-    neuron->this_h = global_params->machine_timestep_ms;
-
     return neuron->V;
 }
 
@@ -123,6 +113,9 @@ static void neuron_model_has_spiked(neuron_t *restrict neuron) {
 
     // simple threshold correction - next timestep (only) gets a bump
     neuron->this_h = global_params->machine_timestep_ms * SIMPLE_TQ_OFFSET;
+
+    // reset refractory timer
+    neuron->refract_timer = neuron->T_refract;
 }
 
 static state_t neuron_model_get_membrane_voltage(const neuron_t *neuron) {

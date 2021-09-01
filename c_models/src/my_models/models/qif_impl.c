@@ -37,4 +37,6 @@ void neuron_model_print_parameters(const neuron_t *neuron) {
     log_debug("C = %11.4k ", neuron->C);
 
     log_debug("I = %11.4k \n", neuron->I_offset);
+
+    log_debug("T refract = %u timesteps", neuron->T_refract);
 }

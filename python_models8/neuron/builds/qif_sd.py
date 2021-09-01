@@ -54,11 +54,11 @@ class QifSd(AbstractPyNNNeuronModelStandard):
     # noinspection PyPep8Naming
     @default_initial_values({"v", "i_offset", "exc_response", "exc_exp_response", "inh_response",
         "inh_exp_response"})
-    def __init__(self, c=-100.0, i_offset=0.0, v=-100.0,
+    def __init__(self, c=-100.0, i_offset=0.0, v=-100.0, tau_refrac=0.002,
             tau_syn_E=0.5, tau_syn_I=0.5, exc_response=0.0,
             exc_exp_response=0.0, inh_response=0.0, inh_exp_response=0.0):
         # pylint: disable=too-many-arguments, too-many-locals
-        neuron_model = QifModel(c, v, i_offset)
+        neuron_model = QifModel(c, v, i_offset, tau_refrac)
         synapse_type = SynapseTypeAlpha(
             exc_response, exc_exp_response, tau_syn_E, inh_response,
             inh_exp_response, tau_syn_I)

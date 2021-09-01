@@ -12,6 +12,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import numpy
 from spinn_utilities.overrides import overrides
 from data_specification.enums import DataType
 from spinn_front_end_common.utilities.constants import (
@@ -20,14 +21,18 @@ from spynnaker.pyNN.models.neuron.neuron_models import AbstractNeuronModel
 from spynnaker.pyNN.models.neuron.implementations import (
     AbstractStandardNeuronComponent)
 
+# TODO: replace 'C' with 'V_RESET'
 C = 'c'
 V = 'v'
 I_OFFSET = 'i_offset'
+TAU_REFRAC = 'tau_refrac'
+COUNT_REFRAC = 'count_refrac'
 
 UNITS = {
     C: "mV",
     V: "mV",
-    I_OFFSET: "nA"
+    I_OFFSET: "nA",
+    TAU_REFRAC: "ms"
 }
 
 
@@ -35,10 +40,10 @@ class QifModel(AbstractNeuronModel):
     """ QIF model (simplified Izhikevich model)
     """
     __slots__ = [
-        "__c", "__v_init", "__i_offset"
+        "__c", "__v_init", "__i_offset", "__tau_refrac"
     ]
 
-    def __init__(self, c, v_init, i_offset):
+    def __init__(self, c, v_init, i_offset, tau_refrac):
         """
         :param c: :math:`c`
         :type c: float, iterable(float), ~pyNN.random.RandomDistribution or
@@ -56,25 +61,30 @@ class QifModel(AbstractNeuronModel):
             [DataType.S1615,   # c
              DataType.S1615,   # v
              DataType.S1615,   # i_offset
+             DataType.INT32,   # count_refrac
+             DataType.INT32,   # tau_refrac
              DataType.S1615],  # this_h (= machine_time_step)
             [DataType.S1615])  # machine_time_step
         self.__c = c
         self.__i_offset = i_offset
         self.__v_init = v_init
+        self.__tau_refrac = tau_refrac
 
     @overrides(AbstractStandardNeuronComponent.get_n_cpu_cycles)
     def get_n_cpu_cycles(self, n_neurons):
         # A bit of a guess
-        return 150 * n_neurons
+        return 200 * n_neurons
 
     @overrides(AbstractStandardNeuronComponent.add_parameters)
     def add_parameters(self, parameters):
         parameters[C] = self.__c
         parameters[I_OFFSET] = self.__i_offset
+        parameters[TAU_REFRAC] = self.__tau_refrac
 
     @overrides(AbstractStandardNeuronComponent.add_state_variables)
     def add_state_variables(self, state_variables):
         state_variables[V] = self.__v_init
+        state_variables[COUNT_REFRAC] = 0
 
     @overrides(AbstractStandardNeuronComponent.get_units)
     def get_units(self, variable):
@@ -100,6 +110,8 @@ class QifModel(AbstractNeuronModel):
         return [
             parameters[C],
             state_variables[V], parameters[I_OFFSET],
+            state_variables[COUNT_REFRAC], parameters[TAU_REFRAC].apply_operation(
+                operation=lambda x: int(numpy.ceil(x / (ts / 1000.0)))),
             float(ts) / MICRO_TO_MILLISECOND_CONVERSION
         ]
 
@@ -107,10 +119,11 @@ class QifModel(AbstractNeuronModel):
     def update_values(self, values, parameters, state_variables):
 
         # Decode the values
-        _c, v, _i_offset, _this_h = values
+        _c, v, _i_offset, count_refrac, _tau_refrac, _this_h = values
 
         # Copy the changed data only
         state_variables[V] = v
+        state_variables[COUNT_REFRAC] = count_refrac
 
     @property
     def c(self):
@@ -135,3 +148,11 @@ class QifModel(AbstractNeuronModel):
         :rtype: float
         """
         return self.__v_init
+
+    @property
+    def tau_refrac(self):
+        r""" Settable model parameter: :math:`\tau_{refrac}`
+
+        :rtype: float
+        """
+        return self.__tau_refrac

@@ -66,10 +66,10 @@ class SimpleQif(AbstractPyNNNeuronModelStandard):
 
     # noinspection PyPep8Naming
     @default_initial_values({"v", "isyn_exc", "isyn_inh"})
-    def __init__(self, c=-100.0, i_offset=0.0, v=-100.0,
+    def __init__(self, c=-100.0, i_offset=0.0, v=-100.0, tau_refrac=0.002,
         tau_syn_E=5.0, tau_syn_I=5.0, isyn_exc=0.0, isyn_inh=0.0):
         # pylint: disable=too-many-arguments, too-many-locals
-        neuron_model = QifModel(c, v, i_offset)
+        neuron_model = QifModel(c, v, i_offset, tau_refrac)
         synapse_type = SynapseTypeExponential(
             tau_syn_E, tau_syn_I, isyn_exc, isyn_inh)
         # synapse_type = SynapseTypeDelta(
