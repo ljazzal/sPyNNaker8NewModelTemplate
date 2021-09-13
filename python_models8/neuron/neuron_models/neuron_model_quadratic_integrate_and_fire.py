@@ -36,7 +36,7 @@ UNITS = {
 }
 
 
-class QifModel(AbstractNeuronModel):
+class NeuronModelQuadraticIntegrateAndFire(AbstractNeuronModel):
     """ QIF model (simplified Izhikevich model)
     """
     __slots__ = [

@@ -13,39 +13,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from spynnaker.pyNN.models.neuron.neuron_models import NeuronModelIzh
-from spynnaker.pyNN.models.neuron.synapse_types import SynapseTypeExponential
-# from spynnaker.pyNN.models.neuron.synapse_types import SynapseTypeDelta
+from spynnaker.pyNN.models.neuron.synapse_types import SynapseTypeAlpha
 from spynnaker.pyNN.models.neuron.input_types import InputTypeCurrent
 from spynnaker.pyNN.models.neuron.threshold_types import ThresholdTypeStatic
 from spynnaker.pyNN.models.neuron import AbstractPyNNNeuronModelStandard
 from spynnaker.pyNN.models.defaults import default_initial_values
 
-from python_models8.neuron.neuron_models.qif_model import QifModel
+from python_models8.neuron.neuron_models.neuron_model_quadratic_integrate_and_fire import (
+    NeuronModelQuadraticIntegrateAndFire)
 
 _IZK_THRESHOLD = 100.0
 
 
-class SimpleQif(AbstractPyNNNeuronModelStandard):
-    """ Izhikevich neuron model with current inputs.
+class QIFCurrAlpha(AbstractPyNNNeuronModelStandard):
+    """ QIF neuron model with synaptic depression (alpha current)
 
-    :param a: :math:`a`
-    :type a: float, iterable(float), ~pyNN.random.RandomDistribution
-        or (mapping) function
-    :param b: :math:`b`
-    :type b: float, iterable(float), ~pyNN.random.RandomDistribution
-        or (mapping) function
     :param c: :math:`c`
     :type c: float, iterable(float), ~pyNN.random.RandomDistribution
         or (mapping) function
-    :param d: :math:`d`
-    :type d: float, iterable(float), ~pyNN.random.RandomDistribution
-        or (mapping) function
     :param i_offset: :math:`I_{offset}`
     :type i_offset: float, iterable(float), ~pyNN.random.RandomDistribution
-        or (mapping) function
-    :param u: :math:`u_{init} = \\delta V_{init}`
-    :type u: float, iterable(float), ~pyNN.random.RandomDistribution
         or (mapping) function
     :param v: :math:`v_{init} = V_{init}`
     :type v: float, iterable(float), ~pyNN.random.RandomDistribution
@@ -65,19 +52,20 @@ class SimpleQif(AbstractPyNNNeuronModelStandard):
     """
 
     # noinspection PyPep8Naming
-    @default_initial_values({"v", "isyn_exc", "isyn_inh"})
+    @default_initial_values({"v", "i_offset", "exc_response", "exc_exp_response", "inh_response",
+        "inh_exp_response"})
     def __init__(self, c=-100.0, i_offset=0.0, v=-100.0, tau_refrac=0.002,
-        tau_syn_E=5.0, tau_syn_I=5.0, isyn_exc=0.0, isyn_inh=0.0):
+            tau_syn_E=0.5, tau_syn_I=0.5, exc_response=0.0,
+            exc_exp_response=0.0, inh_response=0.0, inh_exp_response=0.0):
         # pylint: disable=too-many-arguments, too-many-locals
-        neuron_model = QifModel(c, v, i_offset, tau_refrac)
-        synapse_type = SynapseTypeExponential(
-            tau_syn_E, tau_syn_I, isyn_exc, isyn_inh)
-        # synapse_type = SynapseTypeDelta(
-        #     isyn_exc, isyn_inh)        
+        neuron_model = NeuronModelQuadraticIntegrateAndFire(c, v, i_offset, tau_refrac)
+        synapse_type = SynapseTypeAlpha(
+            exc_response, exc_exp_response, tau_syn_E, inh_response,
+            inh_exp_response, tau_syn_I)
         input_type = InputTypeCurrent()
         threshold_type = ThresholdTypeStatic(_IZK_THRESHOLD)
 
         super().__init__(
-            model_name="SimpleQif", binary="simple_qif.aplx",
+            model_name="QifCurrAlpha", binary="qif_curr_alpha.aplx",
             neuron_model=neuron_model, input_type=input_type,
             synapse_type=synapse_type, threshold_type=threshold_type)
