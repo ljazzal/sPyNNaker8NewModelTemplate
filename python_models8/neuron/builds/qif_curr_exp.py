@@ -75,6 +75,6 @@ class QIFCurrExp(AbstractPyNNNeuronModelStandard):
         threshold_type = ThresholdTypeStatic(_IZK_THRESHOLD)
 
         super().__init__(
-            model_name="QIFCurrExp", binary="qif_curr_exp.aplx",
+            model_name="QIFCurrExp", binary="QIF_curr_exp.aplx",
             neuron_model=neuron_model, input_type=input_type,
             synapse_type=synapse_type, threshold_type=threshold_type)
